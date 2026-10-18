@@ -43,10 +43,13 @@ export function removeItem(items: PathItem[], itemId: string): PathItem[] {
   return items
     .filter((item) => item.id !== itemId)
     .map((item) => {
-      if (!item.linkedItemIds.includes(itemId)) return item
+      const linked = item.linkedItemIds.includes(itemId)
+      const blocked = (item.blockedByIds ?? []).includes(itemId)
+      if (!linked && !blocked) return item
       return {
         ...item,
         linkedItemIds: item.linkedItemIds.filter((id) => id !== itemId),
+        blockedByIds: (item.blockedByIds ?? []).filter((id) => id !== itemId),
         updatedAt: nowIso(),
       }
     })

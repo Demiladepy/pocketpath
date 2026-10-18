@@ -69,6 +69,80 @@ describe("persistence", () => {
     expect(loaded.notice).toMatch(/repaired/i)
   })
 
+  it("loads an older card that has none of the extraction fields", () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      STORAGE_KEYS.workspaces,
+      JSON.stringify([
+        {
+          id: "path-old",
+          title: "Old path",
+          sourceText: "Read this",
+          currentItemId: "card-old",
+          createdAt: "2026-10-01T00:00:00.000Z",
+          updatedAt: "2026-10-01T00:00:00.000Z",
+          items: [
+            {
+              id: "card-old",
+              type: "step",
+              title: "Read this",
+              description: "Saved before extraction fields existed.",
+              status: "not-started",
+              position: 0,
+              linkedItemIds: [],
+              createdAt: "2026-10-01T00:00:00.000Z",
+              updatedAt: "2026-10-01T00:00:00.000Z",
+            },
+          ],
+        },
+      ]),
+    )
+    const loaded = loadAppState(storage)
+    const item = loaded.workspaces[0]?.items[0]
+    expect(item?.title).toBe("Read this")
+    expect(item?.origin).toBeUndefined()
+    expect(item?.blockedByIds).toEqual([])
+    expect(loaded.notice).toBeNull()
+  })
+
+  it("keeps text size, contrast, and reduced motion, and replaces corrupt settings", () => {
+    const storage = memoryStorage()
+    expect(
+      saveAppState(storage, {
+        workspaces: [],
+        activeId: null,
+        preferences: { ...defaultPreferences, fontScale: "extra-large", highContrast: true, reducedMotion: true },
+        session: { ...defaultSession, draftItems: null },
+      }),
+    ).toBeNull()
+    const loaded = loadAppState(storage)
+    expect(loaded.preferences.fontScale).toBe("extra-large")
+    expect(loaded.preferences.highContrast).toBe(true)
+    expect(loaded.preferences.reducedMotion).toBe(true)
+
+    storage.setItem(STORAGE_KEYS.preferences, "{")
+    const broken = loadAppState(storage)
+    expect(broken.preferences).toEqual(defaultPreferences)
+    expect(broken.notice).toMatch(/accessibility settings/i)
+  })
+
+  it("clears corrupted undo history and a history saved by another version", () => {
+    const storage = memoryStorage()
+    storage.setItem(STORAGE_KEYS.history, "{")
+    const corrupt = loadAppState(storage)
+    expect(corrupt.history.undo).toEqual([])
+    expect(corrupt.history.redo).toEqual([])
+    expect(corrupt.notice).toMatch(/undo history could not be read/i)
+
+    storage.setItem(
+      STORAGE_KEYS.history,
+      JSON.stringify({ schemaVersion: 99, undo: [{ id: "old" }], redo: [] }),
+    )
+    const migrated = loadAppState(storage)
+    expect(migrated.history.undo).toEqual([])
+    expect(migrated.notice).toMatch(/another version/i)
+  })
+
   it("starts fresh when saved paths are corrupted", () => {
     const storage = memoryStorage()
     storage.setItem(STORAGE_KEYS.workspaces, "{")

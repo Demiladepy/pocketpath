@@ -1,5 +1,7 @@
 import { useState } from "react"
-import { Focus, Plus } from "lucide-react"
+import { Focus, Plus, RefreshCw } from "lucide-react"
+import { TYPE_LABELS } from "../domain/labels.ts"
+import { describeSourceRef } from "../domain/sources/ingestSource.ts"
 import { byPosition } from "../domain/order.ts"
 import type { WorkspaceTab } from "../domain/types.ts"
 import { useWorkspace } from "../state/WorkspaceContext.tsx"
@@ -15,8 +17,27 @@ const TABS: Array<{ id: WorkspaceTab; label: string }> = [
 ]
 
 export function WorkspaceView() {
-  const { active, tab, setTab, setCurrent, enterFocus, addItem, goHome } = useWorkspace()
+  const {
+    active,
+    tab,
+    pendingReview,
+    setTab,
+    setCurrent,
+    enterFocus,
+    addItem,
+    goHome,
+    organizeAgain,
+    acceptAddition,
+    acceptUpdate,
+    dismissSuggestion,
+    dismissReview,
+    renameWorkspace,
+    deleteWorkspace,
+  } = useWorkspace()
   const [tabMessage, setTabMessage] = useState("")
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState("")
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (!active) {
     return (
@@ -46,7 +67,38 @@ export function WorkspaceView() {
     <div className="stack">
       <header className="page-intro">
         <p className="eyebrow">Path</p>
-        <h1>{active.title}</h1>
+        {editingTitle ? (
+          <form
+            className="stack"
+            onSubmit={(event) => {
+              event.preventDefault()
+              renameWorkspace(active.id, titleDraft)
+              setEditingTitle(false)
+            }}
+          >
+            <label className="field">
+              <span>Path name</span>
+              <input
+                className="control"
+                value={titleDraft}
+                onChange={(event) => setTitleDraft(event.target.value)}
+                autoFocus
+                aria-label="Path name"
+              />
+            </label>
+            <div className="action-row">
+              <Button variant="primary" type="submit">
+                Save name
+              </Button>
+              <Button variant="quiet" type="button" onClick={() => setEditingTitle(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <h1>{active.title}</h1>
+        )}
+        {describeSourceRef(active.sourceRef) ? <p className="hint">{describeSourceRef(active.sourceRef)}</p> : null}
         <div className="action-row">
           <Button variant="primary" icon={Focus} onClick={enterFocus}>
             Focus
@@ -54,8 +106,96 @@ export function WorkspaceView() {
           <Button variant="secondary" icon={Plus} onClick={addItem}>
             Add card
           </Button>
+          <Button variant="secondary" icon={RefreshCw} onClick={organizeAgain}>
+            Organize again
+          </Button>
+          {!editingTitle ? (
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setConfirmDelete(false)
+                setTitleDraft(active.title)
+                setEditingTitle(true)
+              }}
+            >
+              Rename
+            </Button>
+          ) : null}
+          {confirmDelete ? (
+            <>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  deleteWorkspace(active.id)
+                  setConfirmDelete(false)
+                }}
+              >
+                Confirm delete
+              </Button>
+              <Button variant="quiet" onClick={() => setConfirmDelete(false)}>
+                Keep path
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setEditingTitle(false)
+                setConfirmDelete(true)
+              }}
+            >
+              Delete path
+            </Button>
+          )}
         </div>
+        {confirmDelete ? (
+          <p className="hint" role="status">
+            This removes the path from this device and returns you to your paths list.
+          </p>
+        ) : null}
       </header>
+
+      {pendingReview ? (
+        <section className="stack" aria-label="Suggestions from the source">
+          <div className="review-banner">
+            <strong>Suggestions</strong>
+            <span>{pendingReview.notice ?? "Nothing is saved until you accept it."}</span>
+          </div>
+          {pendingReview.updates.map((update) => (
+            <article key={update.existingId} className="editor">
+              <span className="badge">Update</span>
+              <h2>{update.proposed.title}</h2>
+              <p>{update.proposed.description}</p>
+              <div className="action-row">
+                <Button variant="secondary" onClick={() => acceptUpdate(update.existingId, update.proposed)}>
+                  Accept update
+                </Button>
+                <Button variant="quiet" onClick={() => dismissSuggestion(update.existingId)}>
+                  Skip
+                </Button>
+              </div>
+            </article>
+          ))}
+          {pendingReview.additions.map((item) => (
+            <article key={item.id} className="editor">
+              <span className="badge">{TYPE_LABELS[item.type]}</span>
+              <h2>{item.title}</h2>
+              <p>{item.description}</p>
+              <div className="action-row">
+                <Button variant="secondary" onClick={() => acceptAddition(item)}>
+                  Accept
+                </Button>
+                <Button variant="quiet" onClick={() => dismissSuggestion(item.id)}>
+                  Skip
+                </Button>
+              </div>
+            </article>
+          ))}
+          <Button variant="quiet" onClick={dismissReview}>
+            Dismiss suggestions
+          </Button>
+        </section>
+      ) : null}
 
       <div className="tablist" role="tablist" aria-label="Path views">
         {TABS.map((entry, index) => {

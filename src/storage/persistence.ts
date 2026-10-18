@@ -6,6 +6,7 @@ import {
   validateWorkspaces,
   type PersistedSession,
 } from "../domain/validate.ts"
+import { boundHistory, HISTORY_SCHEMA_VERSION, parseHistory, type PersistedHistory } from "../domain/history.ts"
 import type { AccessibilityPreferences, PathWorkspace } from "../domain/types.ts"
 
 export const STORAGE_KEYS = {
@@ -13,6 +14,7 @@ export const STORAGE_KEYS = {
   activeId: "pocketpaths.activeId",
   preferences: "pocketpaths.preferences",
   session: "pocketpaths.session",
+  history: "pocketpaths.history",
 } as const
 
 export interface LoadedAppState {
@@ -20,6 +22,7 @@ export interface LoadedAppState {
   activeId: string | null
   preferences: AccessibilityPreferences
   session: PersistedSession
+  history: PersistedHistory
   notice: string | null
 }
 
@@ -37,6 +40,7 @@ export function loadAppState(storage: Storage): LoadedAppState {
   const workspacesRaw = readJson(storage, STORAGE_KEYS.workspaces)
   const preferencesRaw = readJson(storage, STORAGE_KEYS.preferences)
   const sessionRaw = readJson(storage, STORAGE_KEYS.session)
+  const historyRaw = readJson(storage, STORAGE_KEYS.history)
   const activeRaw = storage.getItem(STORAGE_KEYS.activeId)
 
   const notices: string[] = []
@@ -65,12 +69,15 @@ export function loadAppState(storage: Storage): LoadedAppState {
   }
 
   const activeId = workspaces.some((workspace) => workspace.id === activeRaw) ? activeRaw : null
+  const history = parseHistory(historyRaw.value, { missing: historyRaw.missing, corrupt: historyRaw.corrupt })
+  if (history.notice) notices.push(history.notice)
 
   return {
     workspaces,
     activeId,
     preferences,
     session,
+    history: history.history,
     notice: notices.length > 0 ? notices.join(" ") : null,
   }
 }
@@ -80,6 +87,7 @@ export interface SaveAppInput {
   activeId: string | null
   preferences: AccessibilityPreferences
   session: PersistedSession
+  history?: PersistedHistory
 }
 
 export function saveAppState(storage: Storage, input: SaveAppInput): string | null {
@@ -89,6 +97,13 @@ export function saveAppState(storage: Storage, input: SaveAppInput): string | nu
     else storage.removeItem(STORAGE_KEYS.activeId)
     storage.setItem(STORAGE_KEYS.preferences, JSON.stringify(input.preferences))
     storage.setItem(STORAGE_KEYS.session, JSON.stringify(input.session))
+    if (input.history) {
+      const bounded = boundHistory(input.history.undo, input.history.redo)
+      storage.setItem(
+        STORAGE_KEYS.history,
+        JSON.stringify({ schemaVersion: HISTORY_SCHEMA_VERSION, undo: bounded.undo, redo: bounded.redo }),
+      )
+    }
     return null
   } catch {
     return "Changes could not be saved on this device. Copy anything important before you leave."

@@ -1,5 +1,9 @@
+import { findDate } from "./dates.ts"
+import { extractPlainText, type ExtractionResult } from "./extractInstructions.ts"
+import { assessCards, assessRelationships, screenSource } from "./extraction/quality.ts"
 import { createId, nowIso } from "./ids.ts"
-import { linkItems } from "./links.ts"
+import { proposeRelationships } from "./relationships.ts"
+import { sourceItemId } from "./sourceId.ts"
 import type { PathItem, PathItemType } from "./types.ts"
 
 const LABELS: Record<string, PathItemType> = {
@@ -17,10 +21,30 @@ const LABEL_PATTERN = /^(goal|step|requirement|deadline|resource|person|contact|
 const LINK_PATTERN = /^link\s*:\s*(.+?)\s*->\s*(.+)$/i
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-function titleFrom(text: string): string {
-  const compact = text.replace(/\s+/g, " ").trim()
-  if (compact.length <= 80) return compact
-  return `${compact.slice(0, 77).trimEnd()}...`
+/**
+ * Labeled mode is for deliberately tagged briefs (Goal:, Step:, Link:).
+ * A single prose line such as "Note: …" must not hijack ordinary extraction.
+ */
+function hasLabeledLines(text: string): boolean {
+  let labeledCards = 0
+  let hasGoalOrStep = false
+  let hasLink = false
+  for (const rawLine of text.split(/\r?\n/)) {
+    const trimmed = rawLine.trim()
+    if (!trimmed) continue
+    if (LINK_PATTERN.test(trimmed)) {
+      hasLink = true
+      continue
+    }
+    const match = trimmed.match(LABEL_PATTERN)
+    if (!match) continue
+    const label = match[1].toLowerCase()
+    labeledCards += 1
+    if (label === "goal" || label === "step") hasGoalOrStep = true
+  }
+  if (hasGoalOrStep) return true
+  if (hasLink && labeledCards >= 1) return true
+  return labeledCards >= 2
 }
 
 function splitBody(body: string): { title: string; description: string } {
@@ -31,8 +55,25 @@ function splitBody(body: string): { title: string; description: string } {
   }
 }
 
-export function parseInstructions(text: string): PathItem[] {
-  const now = nowIso()
+export function parseInstructions(text: string, now: Date = new Date()): ExtractionResult {
+  const screened = screenSource(text)
+  if (screened) {
+    return {
+      title: "",
+      items: [],
+      relationships: [],
+      status: screened.status,
+      notice: screened.notice,
+      warnings: [],
+      error: screened.error,
+    }
+  }
+  if (hasLabeledLines(text)) return parseLabeled(text, now)
+  return extractPlainText(text, now)
+}
+
+function parseLabeled(text: string, now: Date): ExtractionResult {
+  const stamp = nowIso()
   const items: PathItem[] = []
   const pendingLinks: Array<[string, string]> = []
 
@@ -56,11 +97,35 @@ export function parseInstructions(text: string): PathItem[] {
     let title = body.title
     let description = body.description
     let dueDate: string | undefined
+    let dueTime: string | undefined
+    let timeZone: string | undefined
+    let deadlineReview: string | undefined
+    let rangeStart: string | undefined
+    let rangeEnd: string | undefined
+    let recurrence: string | undefined
+    let dateLabel: string | undefined
+    let dateCertainty: PathItem["dateCertainty"]
 
     if (type === "deadline" && DATE_PATTERN.test(title)) {
       dueDate = title
+      dateLabel = title
+      dateCertainty = "exact"
+      timeZone = "unspecified"
       title = description || "Deadline"
       description = dueDate ? `Due ${dueDate}` : ""
+    } else if (type === "deadline") {
+      const dated = findDate(body.title, now) ?? findDate(line, now)
+      if (dated?.dueDate) dueDate = dated.dueDate
+      if (dated) {
+        dateLabel = dated.dateLabel
+        dateCertainty = dated.certainty
+        dueTime = dated.dueTime
+        timeZone = dated.timeZone
+        deadlineReview = dated.deadlineReview
+        rangeStart = dated.rangeStart
+        rangeEnd = dated.rangeEnd
+        recurrence = dated.recurrence
+      }
     }
 
     const item: PathItem = {
@@ -71,68 +136,49 @@ export function parseInstructions(text: string): PathItem[] {
       status: "not-started",
       position: items.length,
       linkedItemIds: [],
-      createdAt: now,
-      updatedAt: now,
+      blockedByIds: [],
+      origin: "extracted",
+      userEdited: false,
+      sourceExcerpt: line,
+      sourceId: sourceItemId(type, line),
+      spokenInstruction: title.replace(/[.]+$/, ""),
+      createdAt: stamp,
+      updatedAt: stamp,
     }
     if (dueDate) item.dueDate = dueDate
+    if (dueTime) item.dueTime = dueTime
+    if (timeZone) item.timeZone = timeZone
+    if (deadlineReview) item.deadlineReview = deadlineReview
+    if (rangeStart) item.rangeStart = rangeStart
+    if (rangeEnd) item.rangeEnd = rangeEnd
+    if (recurrence) item.recurrence = recurrence
+    if (dateLabel) item.dateLabel = dateLabel
+    if (dateCertainty) item.dateCertainty = dateCertainty
     items.push(item)
   }
 
-  const structured = items.length > 0 ? items : fallbackItems(text, now)
-  return applyPendingLinks(structured, pendingLinks)
-}
-
-function fallbackItems(text: string, now: string): PathItem[] {
-  const blocks = text
-    .split(/\n\s*\n/)
-    .map((block) => block.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-
-  const sourceBlocks = blocks.length > 0 ? blocks : []
-  if (sourceBlocks.length === 0) return []
-
-  let chunks = sourceBlocks
-  if (chunks.length === 1) {
-    const sentences = chunks[0].split(/(?<=[.!?])\s+/).map((part) => part.trim()).filter(Boolean)
-    if (sentences.length > 1) chunks = sentences
-  }
-
-  const goalId = createId()
-  const drafted: PathItem[] = chunks.map((chunk, index) => {
-    const isGoal = index === 0
-    const type: PathItemType = isGoal ? "goal" : "step"
-    return {
-      id: isGoal ? goalId : createId(),
-      type,
-      title: titleFrom(chunk),
-      description: isGoal
-        ? "Check this goal. It was taken from your text and may need a clearer title."
-        : chunk,
-      status: "not-started",
-      position: index,
-      linkedItemIds: [],
-      createdAt: now,
-      updatedAt: now,
-    }
+  const proposed = proposeRelationships(
+    items,
+    text,
+    pendingLinks.map(([fromTitle, toTitle]) => ({ fromTitle, toTitle })),
+  )
+  const cards = assessCards({
+    sourceText: text,
+    title: items.find((item) => item.type === "goal")?.title || items[0]?.title || "",
+    items,
+    warnings: proposed.warnings,
   })
-
-  if (drafted.length < 2) return drafted
-  return drafted.map((item, index) => ({
-    ...item,
-    linkedItemIds: index === 0 ? drafted.slice(1).map((step) => step.id) : [goalId],
-  }))
-}
-
-function applyPendingLinks(items: PathItem[], pendingLinks: Array<[string, string]>): PathItem[] {
-  return pendingLinks.reduce((current, [fromTitle, toTitle]) => {
-    const source = findByTitle(current, fromTitle)
-    const target = findByTitle(current, toTitle)
-    if (!source || !target) return current
-    return linkItems(current, source.id, target.id)
-  }, items)
-}
-
-function findByTitle(items: PathItem[], title: string): PathItem | undefined {
-  const key = title.trim().toLowerCase()
-  return items.find((item) => item.title.trim().toLowerCase() === key)
+  const links = assessRelationships(cards.items, proposed.relationships, cards.warnings)
+  const partial = links.changed && (cards.status === "ready" || cards.status === "partial")
+  return {
+    title: cards.title,
+    items: cards.items,
+    relationships: links.relationships,
+    status: partial ? "partial" : cards.status,
+    notice: partial
+      ? "Some of this text became cards. A connection needed repair, so review what was kept. A draft is not a checked reading."
+      : cards.notice,
+    warnings: links.warnings,
+    error: cards.error,
+  }
 }

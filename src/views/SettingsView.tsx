@@ -1,9 +1,9 @@
-import { Square, Volume2 } from "lucide-react"
 import type { AccessibilityPreferences } from "../domain/types.ts"
 import { useSpeech } from "../hooks/useSpeech.ts"
 import { usePreferences } from "../state/PreferencesContext.tsx"
 import { useWorkspace } from "../state/WorkspaceContext.tsx"
 import { Button } from "../components/Button.tsx"
+import { ReadAloudControls } from "../components/ReadAloudControls.tsx"
 
 const SCALES: Array<{ id: AccessibilityPreferences["fontScale"]; label: string }> = [
   { id: "normal", label: "Normal" },
@@ -14,16 +14,17 @@ const SCALES: Array<{ id: AccessibilityPreferences["fontScale"]; label: string }
 export function SettingsView() {
   const { preferences, updatePreferences } = usePreferences()
   const { closeSettings } = useWorkspace()
-  const { supported, speaking, speak, stop } = useSpeech()
+  const speech = useSpeech()
+  const sample = "This is how PocketPaths sounds when it reads a step aloud."
 
   function toggleReadAloud(enabled: boolean) {
     updatePreferences({ readAloudEnabled: enabled })
     if (!enabled) {
-      stop()
+      speech.stop()
       return
     }
-    if (supported) {
-      speak("Read aloud is on. PocketPaths will read the current step in focus mode.")
+    if (speech.supported) {
+      speech.speak("Read aloud is on. PocketPaths will read the current step in focus mode.")
     }
   }
 
@@ -78,24 +79,7 @@ export function SettingsView() {
         <span>Read aloud in focus mode</span>
       </label>
 
-      {supported ? (
-        <div className="action-row">
-          <Button
-            variant="secondary"
-            icon={Volume2}
-            onClick={() => speak("This is how PocketPaths sounds when it reads a step aloud.")}
-          >
-            Read aloud
-          </Button>
-          <Button variant="secondary" icon={Square} onClick={stop} disabled={!speaking}>
-            Stop
-          </Button>
-        </div>
-      ) : (
-        <p className="hint" role="status">
-          Read aloud is not available in this browser. You can still read every card on screen.
-        </p>
-      )}
+      <ReadAloudControls text={sample} speech={speech} />
 
       <article className="path-card" aria-label="Preview">
         <p className="eyebrow">Preview</p>

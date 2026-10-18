@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react"
-import { linkPairs } from "../domain/links.ts"
+import { readMap, type MapEdgeRole } from "../domain/mapLayout.ts"
 import { byPosition } from "../domain/order.ts"
 import type { PathItem } from "../domain/types.ts"
 import { useWorkspace } from "../state/WorkspaceContext.tsx"
@@ -7,6 +7,7 @@ import { StatusBadge, TypeBadge } from "./StatusBadge.tsx"
 
 interface Line {
   key: string
+  role: MapEdgeRole
   x1: number
   y1: number
   x2: number
@@ -16,7 +17,12 @@ interface Line {
 export function MapView({ items }: { items: PathItem[] }) {
   const { active, setCurrent } = useWorkspace()
   const ordered = byPosition(items)
-  const pairs = linkPairs(ordered)
+  const reading = readMap(ordered, active?.relationships ?? [])
+  const pairs = reading.edges.flatMap((edge) => {
+    const from = ordered.find((item) => item.id === edge.fromId)
+    const to = ordered.find((item) => item.id === edge.toId)
+    return from && to ? [{ ...edge, from, to }] : []
+  })
   const containerRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLButtonElement>())
   const [lines, setLines] = useState<Line[]>([])
@@ -44,7 +50,8 @@ export function MapView({ items }: { items: PathItem[] }) {
         if (!from || !to) return []
         return [
           {
-            key: `${pair.from.id}:${pair.to.id}`,
+            key: pair.key,
+            role: pair.role,
             x1: from.x,
             y1: from.y,
             x2: to.x,
@@ -63,6 +70,7 @@ export function MapView({ items }: { items: PathItem[] }) {
               line.key === next[index]?.key &&
               line.x1 === next[index]?.x1 &&
               line.y1 === next[index]?.y1 &&
+              line.role === next[index]?.role &&
               line.x2 === next[index]?.x2 &&
               line.y2 === next[index]?.y2,
           )
@@ -78,20 +86,28 @@ export function MapView({ items }: { items: PathItem[] }) {
 
   return (
     <div className="stack">
+      <p className="hint">{reading.explanation}</p>
+      <ul className="action-row" aria-label="Line types">
+        <li className="badge">Dashed line: suggested order</li>
+        <li className="badge">Solid line: waits on</li>
+        <li className="badge">Dotted line: extra information</li>
+      </ul>
       <div className="map" ref={containerRef}>
         <svg className="map-lines" aria-hidden="true" width={mapSize.width} height={mapSize.height}>
           {lines.map((line) => (
-            <line key={line.key} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+            <line key={line.key} className={`edge-${line.role}`} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
           ))}
         </svg>
         <div className="map-grid">
           {ordered.map((item) => {
             const selected = active?.currentItemId === item.id
+            const start = reading.startId === item.id
+            const className = ["info-card", selected ? "selected" : "", start ? "start" : ""].filter(Boolean).join(" ")
             return (
               <button
                 key={item.id}
                 type="button"
-                className={selected ? "info-card selected" : "info-card"}
+                className={className}
                 aria-current={selected ? "true" : undefined}
                 ref={(node) => {
                   if (node) cardRefs.current.set(item.id, node)
@@ -102,6 +118,7 @@ export function MapView({ items }: { items: PathItem[] }) {
                 <span className="badge-row">
                   <TypeBadge type={item.type} />
                   <StatusBadge status={item.status} />
+                  {start ? <span className="badge">Start here</span> : null}
                   {selected ? <span className="badge">Selected</span> : null}
                 </span>
                 <span className="card-title">{item.title}</span>
@@ -117,14 +134,28 @@ export function MapView({ items }: { items: PathItem[] }) {
         ) : (
           <ul className="connection-list">
             {pairs.map((pair) => (
-              <li key={`${pair.from.id}:${pair.to.id}`}>
-                <button type="button" className="text-button" onClick={() => setCurrent(pair.from.id)}>
-                  {pair.from.title}
-                </button>
-                <span aria-hidden="true">→</span>
-                <button type="button" className="text-button" onClick={() => setCurrent(pair.to.id)}>
-                  {pair.to.title}
-                </button>
+              <li key={pair.key}>
+                {pair.role === "blocker" ? (
+                  <>
+                    <button type="button" className="text-button" onClick={() => setCurrent(pair.to.id)}>
+                      {pair.to.title}
+                    </button>
+                    <span>waits on</span>
+                    <button type="button" className="text-button" onClick={() => setCurrent(pair.from.id)}>
+                      {pair.from.title}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="text-button" onClick={() => setCurrent(pair.from.id)}>
+                      {pair.from.title}
+                    </button>
+                    <span>{pair.role === "order" ? "is listed before" : "connects to"}</span>
+                    <button type="button" className="text-button" onClick={() => setCurrent(pair.to.id)}>
+                      {pair.to.title}
+                    </button>
+                  </>
+                )}
               </li>
             ))}
           </ul>
