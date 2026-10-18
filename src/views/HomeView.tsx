@@ -45,34 +45,65 @@ export function HomeView() {
   }
 
   return (
-    <div className="stack">
-      <header className="page-intro">
-        <p className="eyebrow">Built for dense briefs</p>
-        <h1>Make information make sense.</h1>
-        <p className="lede">
-          Paste a messy email or assignment. PocketPaths turns it into cards you can fix, then one clear next step.
-        </p>
-        <ol className="howto">
-          <li>Paste an email, assignment, or brief.</li>
-          <li>Organize, then accept or fix each card.</li>
-          <li>Open Focus when you are ready for the next step.</li>
-        </ol>
-        <div className="action-row">
-          <Button variant="primary" icon={Plus} onClick={() => startCreate("")}>
-            Create a path
-          </Button>
+    <div className="home">
+      <section className="home-hero" aria-labelledby="home-title">
+        <div className="home-hero-copy">
+          <p className="eyebrow">Built for dense briefs</p>
+          <p className="hero-kicker">PocketPaths</p>
+          <h1 id="home-title">Make information make sense.</h1>
+          <p className="lede">
+            Paste a messy email or assignment. Turn it into cards you can fix, then one clear next step—kept on this
+            device.
+          </p>
+          <div className="action-row hero-actions">
+            <Button variant="primary" icon={Plus} onClick={() => startCreate("")}>
+              Create a path
+            </Button>
+            {sample ? null : (
+              <Button variant="secondary" icon={BookOpen} onClick={() => startCreate(SAMPLE_SOURCE)}>
+                Try the sample
+              </Button>
+            )}
+          </div>
         </div>
-      </header>
+        <aside className="home-hero-artifact" aria-hidden="true">
+          <img className="hero-logo" src="/logo.svg" width={220} height={220} alt="" />
+          <div className="artifact-stack">
+            <span className="artifact-card artifact-card-a">Goal</span>
+            <span className="artifact-card artifact-card-b">Step</span>
+            <span className="artifact-link" />
+          </div>
+        </aside>
+      </section>
 
-      <section className="stack" aria-labelledby="your-paths">
-        <h2 id="your-paths">Your paths</h2>
+      <ol className="howto howto-rail">
+        <li>
+          <span className="howto-index">01</span>
+          <span>Paste an email, assignment, or brief.</span>
+        </li>
+        <li>
+          <span className="howto-index">02</span>
+          <span>Organize, then accept or fix each card.</span>
+        </li>
+        <li>
+          <span className="howto-index">03</span>
+          <span>Open Focus when you are ready for the next step.</span>
+        </li>
+      </ol>
+
+      <hr className="section-rule" />
+
+      <section className="home-paths" aria-labelledby="your-paths">
+        <div className="section-head">
+          <h2 id="your-paths">Your paths</h2>
+          <p className="section-note">Resume where you left off. Nothing leaves this browser.</p>
+        </div>
         {workspaces.length === 0 ? (
-          <p className="empty">
-            You have no paths yet. Create one from a pasted brief, or start from the sample below. Everything stays on
-            this device.
+          <p className="empty empty-panel">
+            You have no paths yet. Create one from a pasted brief, or start from the sample above.
           </p>
         ) : (
-          <ul className="card-grid">
+          <ul className="card-grid path-grid">
             {workspaces.map((workspace) => (
               <li key={workspace.id}>
                 <article className="path-card">
@@ -112,9 +143,9 @@ export function HomeView() {
                     </form>
                   ) : (
                     <>
-                      <h3>{workspace.title}</h3>
-                      <p>{summary(workspace)}</p>
-                      <p className="hint">{savedOn(workspace.updatedAt)}</p>
+                      <p className="path-meta">{savedOn(workspace.updatedAt)}</p>
+                      <h3 className="path-title">{workspace.title}</h3>
+                      <p className="path-summary">{summary(workspace)}</p>
                       <div className="action-row">
                         <Button variant="secondary" onClick={() => openWorkspace(workspace.id)}>
                           Open
@@ -173,13 +204,15 @@ export function HomeView() {
       </section>
 
       {sample ? null : (
-        <section className="path-card sample-card" aria-labelledby="sample-path">
-          <p className="eyebrow">Sample path</p>
-          <h2 id="sample-path">{SAMPLE_TITLE}</h2>
-          <p>A short application brief with a goal, five steps, two requirements, a deadline, and a portal link.</p>
-          <Button variant="secondary" icon={BookOpen} onClick={() => startCreate(SAMPLE_SOURCE)}>
-            Try the sample
-          </Button>
+        <section className="sample-band" aria-labelledby="sample-path">
+          <div className="sample-band-inner">
+            <p className="eyebrow">Sample path</p>
+            <h2 id="sample-path">{SAMPLE_TITLE}</h2>
+            <p className="lede sample-lede">
+              A short application brief with a goal, five steps, two requirements, a deadline, and a portal link. Use
+              Try the sample above to load it.
+            </p>
+          </div>
         </section>
       )}
     </div>

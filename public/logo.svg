@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="PocketPaths">
+  <rect width="64" height="64" rx="14" fill="#100904"/>
+  <!-- lower card -->
+  <rect x="18" y="28" width="28" height="18" rx="5" stroke="#ffedd7" stroke-width="2"/>
+  <!-- upper card -->
+  <rect x="12" y="16" width="28" height="18" rx="5" stroke="#ffedd7" stroke-width="2"/>
+  <!-- path connector -->
+  <path d="M26 34h12" stroke="#dc5000" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="40" cy="34" r="2.2" fill="#dc5000"/>
+</svg>

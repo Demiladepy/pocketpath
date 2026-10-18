@@ -24,22 +24,29 @@ export function Shell({ children }: { children: ReactNode }) {
   } = useWorkspace()
   const { preferenceNotice, dismissPreferenceNotice } = usePreferences()
   const banner = notice ?? preferenceNotice
+  const onHome = view === "home"
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${onHome ? " app-shell-home" : ""}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
+      <p className="edge-label" aria-hidden="true">
+        PocketPaths · local
+      </p>
       <header className="topbar">
         <div className="topbar-inner">
-          <button type="button" className="wordmark" onClick={goHome}>
-            PocketPaths
-            <span className="sr-only">, your paths</span>
+          <button type="button" className="brand-lockup" onClick={goHome}>
+            <img className="brand-mark" src="/logo.svg" width={36} height={36} alt="" />
+            <span className="wordmark">
+              PocketPaths
+              <span className="sr-only">, your paths</span>
+            </span>
           </button>
           {active && view !== "home" && view !== "create" ? (
             <p className="current-path">{active.title}</p>
           ) : (
-            <p className="current-path">Saved on this device</p>
+            <p className="current-path">{onHome ? "On this device" : "Saved on this device"}</p>
           )}
           {saveStatus ? (
             <p className="save-status" role="status">
@@ -47,10 +54,10 @@ export function Shell({ children }: { children: ReactNode }) {
             </p>
           ) : null}
           <div className="topbar-actions">
-            <Button icon={Undo2} variant="secondary" onClick={undo} disabled={!canUndo}>
+            <Button icon={Undo2} variant="quiet" onClick={undo} disabled={!canUndo} aria-label="Undo">
               Undo
             </Button>
-            <Button icon={Redo2} variant="secondary" onClick={redo} disabled={!canRedo}>
+            <Button icon={Redo2} variant="quiet" onClick={redo} disabled={!canRedo} aria-label="Redo">
               Redo
             </Button>
             <Button icon={Settings} variant="secondary" onClick={goSettings}>
