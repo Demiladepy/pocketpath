@@ -1,21 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f3efe4;
-  --ink: #1c1915;
-  --card: #fffdf8;
-  --line: #cfc6b6;
-  --muted: #3f3a33;
-  --accent: #0c5c56;
-  --on-accent: #f3fffc;
-  --danger: #8d1d1d;
-  --soft: #e5f2ef;
-  --shadow: 0 1px 0 rgb(28 25 21 / 6%);
+  /* ORYZO source tokens */
+  --color-warm-cream: #ffedd7;
+  --color-walnut-shadow: #100904;
+  --color-bark-brown: #382416;
+  --color-cork-border: #40372e;
+  --color-driftwood: #6c5f51;
+  --color-ember-accent: #dc5000;
+  --color-pure-black: #000000;
+
+  /* App semantic map */
+  --paper: var(--color-walnut-shadow);
+  --ink: var(--color-warm-cream);
+  --card: var(--color-bark-brown);
+  --line: var(--color-cork-border);
+  --muted: #c9b8a4;
+  --accent: var(--color-bark-brown);
+  --on-accent: var(--color-warm-cream);
+  --danger: #e07050;
+  --soft: #24170e;
+  --ember: var(--color-ember-accent);
+  --shadow: none;
+
+  --radius-card: 12px;
+  --radius-pill: 36px;
+  --radius-ghost: 22.5px;
+  --radius-input: 0;
+
   color: var(--ink);
   background: var(--paper);
-  font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif;
+  font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   font-size: 18px;
   line-height: 1.5;
+  font-weight: 400;
+  font-feature-settings: "ss01" on;
 }
 
 html[data-font-scale="large"] {
@@ -27,15 +46,16 @@ html[data-font-scale="extra-large"] {
 }
 
 html[data-contrast="high"] {
-  --paper: #ffffff;
-  --ink: #000000;
-  --card: #ffffff;
-  --line: #000000;
-  --muted: #000000;
-  --accent: #000000;
-  --on-accent: #ffffff;
-  --danger: #000000;
-  --soft: #ffffff;
+  --paper: #000000;
+  --ink: #ffedd7;
+  --card: #1a1008;
+  --line: #ffedd7;
+  --muted: #ffedd7;
+  --accent: #382416;
+  --on-accent: #ffedd7;
+  --danger: #ffedd7;
+  --soft: #000000;
+  --ember: #ffedd7;
   --shadow: none;
 }
 
@@ -68,25 +88,30 @@ h1,
 h2,
 h3,
 .wordmark {
-  font-family: Fraunces, Georgia, serif;
-  font-weight: 560;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  line-height: 0.95;
+  font-feature-settings: "ss01" on;
 }
 
 h1 {
   margin: 0;
-  font-size: 2.6rem;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.9;
 }
 
 h2 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.7rem);
+  line-height: 1;
 }
 
 h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
+  line-height: 1.09;
 }
 
 p {
@@ -102,7 +127,7 @@ select {
 }
 
 :focus-visible {
-  outline: 3px solid var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -111,10 +136,14 @@ select {
   left: 1rem;
   top: -5rem;
   z-index: 10;
-  background: var(--ink);
-  color: var(--card);
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--ink);
   padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-ghost);
+  text-transform: uppercase;
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .skip-link:focus {
@@ -123,11 +152,14 @@ select {
 
 .app-shell {
   min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgb(56 36 22 / 55%), transparent 55%),
+    var(--paper);
 }
 
 .topbar {
-  border-bottom: 1px solid var(--line);
-  background: var(--card);
+  border-bottom: 1px dashed var(--line);
+  background: transparent;
 }
 
 .topbar-inner,
@@ -148,7 +180,8 @@ select {
   border: 0;
   background: transparent;
   padding: 0.25rem 0;
-  font-size: 1.45rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
 }
 
@@ -156,10 +189,18 @@ select {
   flex: 1;
   min-width: 12rem;
   color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .save-status {
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 .topbar-actions,
@@ -189,21 +230,25 @@ ul.action-row {
 
 .page-intro {
   display: grid;
-  gap: 0.8rem;
-  max-width: 40rem;
+  gap: 0.9rem;
+  max-width: 42rem;
 }
 
 .eyebrow {
-  color: var(--accent);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  color: var(--ember);
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
 }
 
 .lede {
-  font-size: 1.15rem;
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  line-height: 1.35;
+  font-weight: 400;
+  text-transform: none;
   max-width: 38rem;
+  color: var(--ink);
 }
 
 .howto {
@@ -211,23 +256,29 @@ ul.action-row {
   padding-left: 1.25rem;
   max-width: 38rem;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  color: var(--muted);
 }
 
 .howto li {
   line-height: 1.45;
+  text-transform: none;
+  font-weight: 400;
 }
 
 .source-extra {
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
   padding: 0.75rem 1rem;
-  background: var(--card);
+  background: transparent;
 }
 
 .source-extra summary {
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
 }
 
 .source-extra[open] summary {
@@ -241,11 +292,10 @@ ul.action-row {
   margin-top: 0.5rem;
   padding: 0.85rem 0 0.35rem;
   background: linear-gradient(to top, var(--paper) 70%, transparent);
-  border-top: 1px solid var(--line);
+  border-top: 1px dashed var(--line);
 }
 
 @media (max-width: 640px) {
-  /* Top Accept all / Create path stays; sticky bottom would cover Reject buttons. */
   .review-commit {
     position: static;
     background: transparent;
@@ -258,15 +308,17 @@ ul.action-row {
   display: grid;
   gap: 0.65rem;
   padding: 0.75rem;
-  border-radius: 0.85rem;
+  border-radius: var(--radius-card);
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .hint,
 .empty {
   color: var(--muted);
+  text-transform: none;
+  font-weight: 400;
 }
 
 .btn {
@@ -275,33 +327,48 @@ ul.action-row {
   justify-content: center;
   gap: 0.5rem;
   min-height: 3rem;
-  padding: 0.55rem 1rem;
-  border-radius: 999px;
-  border: 2px solid var(--line);
-  background: var(--card);
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--ink);
+  background: transparent;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.8rem;
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--card);
+  border-color: var(--card);
   color: var(--on-accent);
+  border-radius: var(--radius-pill);
+}
+
+.btn-secondary {
+  background: transparent;
+  border-radius: var(--radius-ghost);
 }
 
 .btn-quiet {
   background: transparent;
+  border-color: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+  border-radius: 0;
+  padding-inline: 0.35rem;
 }
 
 .btn-danger {
   color: var(--danger);
   border-color: var(--danger);
-  background: var(--card);
+  background: transparent;
+  border-radius: var(--radius-ghost);
 }
 
 .btn:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .card-grid {
@@ -326,9 +393,9 @@ ul.action-row {
 .sample-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 1.25rem;
-  box-shadow: var(--shadow);
-  padding: 1.15rem;
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  padding: 1.25rem;
 }
 
 .info-card,
@@ -342,18 +409,24 @@ ul.action-row {
 
 .info-card.selected,
 .step-row.selected {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 .card-title {
   display: block;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
 }
 
 .card-copy {
   display: block;
   color: var(--muted);
+  text-transform: none;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .badge {
@@ -361,42 +434,83 @@ ul.action-row {
   align-items: center;
   gap: 0.35rem;
   min-height: 1.8rem;
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: var(--paper);
-  font-weight: 700;
+  background: transparent;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
 }
 
 .badge-completed {
-  background: var(--soft);
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .field {
   display: grid;
   gap: 0.4rem;
-  font-weight: 700;
+  font-weight: 500;
   flex: 1;
   min-width: 12rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
 }
 
 .field .hint,
 .field-row {
   font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
 }
 
 .control {
   width: 100%;
   min-height: 3rem;
-  border: 2px solid var(--line);
-  border-radius: 0.9rem;
-  background: var(--card);
-  padding: 0.65rem 0.8rem;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: var(--radius-input);
+  background: transparent;
+  padding: 0.65rem 0.15rem;
+  text-transform: none;
+  font-weight: 400;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.control:focus {
+  outline: none;
+  border-bottom-width: 2px;
 }
 
 .control-tall {
   min-height: 16rem;
   resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 0.85rem 1rem;
+  background: rgb(16 9 4 / 35%);
+}
+
+.control-tall:focus {
+  border-color: var(--ink);
+  border-bottom-width: 1px;
+}
+
+select.control {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 0.55rem 0.75rem;
+  background: var(--soft);
+}
+
+select.control:focus {
+  border-color: var(--ink);
+  border-bottom-width: 1px;
 }
 
 .editor,
@@ -419,40 +533,50 @@ ul.action-row {
 .message,
 .form-error,
 .review-banner {
-  border: 1px solid var(--line);
-  border-radius: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
   padding: 0.9rem 1rem;
   background: var(--soft);
 }
 
 .form-error {
-  background: #fff4f2;
+  background: #2a120c;
   border-color: var(--danger);
+  border-style: solid;
 }
 
 html[data-contrast="high"] .form-error {
-  background: #ffffff;
+  background: #000000;
+  border-color: var(--ink);
 }
 
 .tablist {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 0.75rem;
 }
 
 .tab {
-  min-height: 3rem;
+  min-height: 2.75rem;
   padding: 0.4rem 1rem;
-  border-radius: 999px;
-  border: 2px solid transparent;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px dashed transparent;
   background: transparent;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
   cursor: pointer;
+  color: var(--muted);
 }
 
 .tab.selected {
-  background: var(--card);
-  border-color: var(--ink);
+  background: transparent;
+  border-bottom-color: var(--ink);
+  color: var(--ink);
 }
 
 .step-list,
@@ -470,7 +594,7 @@ html[data-contrast="high"] .form-error {
   align-items: center;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-card);
   padding: 1rem;
 }
 
@@ -479,9 +603,11 @@ html[data-contrast="high"] .form-error {
   height: 2.4rem;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--soft);
-  font-weight: 700;
+  border: 1px solid var(--line);
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .map {
@@ -516,27 +642,27 @@ html[data-contrast="high"] .form-error {
 }
 
 .map-lines line {
-  stroke: var(--accent);
-  stroke-width: 2;
+  stroke: var(--ink);
+  stroke-width: 1.5;
 }
 
 .map-lines .edge-order {
-  stroke: var(--ink);
+  stroke: var(--muted);
   stroke-dasharray: 7 5;
 }
 
 .map-lines .edge-blocker {
-  stroke: var(--accent);
-  stroke-width: 3;
+  stroke: var(--ink);
+  stroke-width: 2.5;
 }
 
 .map-lines .edge-info {
-  stroke: var(--muted);
+  stroke: var(--color-driftwood);
   stroke-dasharray: 1.5 6;
 }
 
 .info-card.start {
-  box-shadow: inset 0 0 0 3px var(--accent);
+  box-shadow: inset 0 0 0 2px var(--ink);
 }
 
 .connection-list li,
@@ -552,9 +678,12 @@ html[data-contrast="high"] .form-error {
   background: transparent;
   min-height: 1.5rem;
   padding: 0.2rem 0.15rem;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -565,9 +694,17 @@ html[data-contrast="high"] .form-error {
   gap: 1rem;
 }
 
+.focus-card h1 {
+  text-transform: none;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
 .meter {
-  height: 0.7rem;
-  border-radius: 999px;
+  height: 0.45rem;
+  border-radius: var(--radius-pill);
   background: var(--line);
   overflow: hidden;
 }
@@ -575,13 +712,13 @@ html[data-contrast="high"] .form-error {
 .meter span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--ink);
 }
 
 .related-panel {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-card);
   padding: 1rem;
 }
 
@@ -589,7 +726,10 @@ html[data-contrast="high"] .form-error {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.8rem;
   cursor: pointer;
   min-height: 3rem;
 }
@@ -601,8 +741,8 @@ html[data-contrast="high"] .form-error {
 }
 
 .choice-group {
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
   padding: 1rem;
   background: var(--card);
 }
@@ -612,12 +752,16 @@ html[data-contrast="high"] .form-error {
   align-items: center;
   gap: 0.75rem;
   min-height: 3rem;
-  font-weight: 700;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.85rem;
 }
 
 .choice input {
   width: 1.25rem;
   height: 1.25rem;
+  accent-color: var(--ember);
 }
 
 .sr-only {
@@ -634,7 +778,7 @@ html[data-contrast="high"] .form-error {
 
 @media (max-width: 640px) {
   h1 {
-    font-size: 2.1rem;
+    font-size: 1.85rem;
   }
 
   .step-row {

@@ -47,7 +47,7 @@ export function HomeView() {
   return (
     <div className="stack">
       <header className="page-intro">
-        <p className="eyebrow">For dense instructions</p>
+        <p className="eyebrow">Built for dense briefs</p>
         <h1>Make information make sense.</h1>
         <p className="lede">
           Paste a messy email or assignment. PocketPaths turns it into cards you can fix, then one clear next step.
